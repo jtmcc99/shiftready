@@ -1,0 +1,9 @@
+node_modules/
+venv/
+__pycache__/
+*.pyc
+.env
+backend/briefings/*.json
+*.egg-info/
+dist/
+.DS_Store
