@@ -1,0 +1,208 @@
+[
+  {
+    "id": "95662263-7884-48e2-9a8f-1552f2480fbe",
+    "created_at": "2026-04-07T22:32:15.252814+00:00",
+    "name": "Maria Lopez",
+    "role": "courier",
+    "home_neighborhood": "Williamsburg",
+    "home_borough": "Brooklyn",
+    "subway_lines": [
+      "L"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "09:00",
+    "zone_assignment": "East Village",
+    "phone": "555-0101",
+    "email": "maria@example.com",
+    "notes": ""
+  },
+  {
+    "id": "d0d4cf76-c21b-414d-b241-bd0d911bd2d5",
+    "created_at": "2026-04-08T22:23:26.762118+00:00",
+    "name": "Sofia Chen",
+    "role": "driver",
+    "home_neighborhood": "Park Slope",
+    "home_borough": "Brooklyn",
+    "subway_lines": [
+      "F"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "08:30",
+    "zone_assignment": "Midtown",
+    "phone": "718-555-0202",
+    "email": "sofia@shiftready.demo",
+    "notes": "F train direct to 47-50 Sts Rockefeller Ctr"
+  },
+  {
+    "id": "0ca78fc3-b626-4117-9135-9b8e0eaf4563",
+    "created_at": "2026-04-08T22:23:26.774535+00:00",
+    "name": "DeShawn Thompson",
+    "role": "driver",
+    "home_neighborhood": "Crown Heights",
+    "home_borough": "Brooklyn",
+    "subway_lines": [
+      "3",
+      "2"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "09:00",
+    "zone_assignment": "Downtown",
+    "phone": "718-555-0205",
+    "email": "deshawn@shiftready.demo",
+    "notes": "2 or 3 train to 50th St \u2014 direct shot up 7th Ave"
+  },
+  {
+    "id": "abd499b2-4826-444d-9058-376d67ec871b",
+    "created_at": "2026-04-08T22:23:26.778680+00:00",
+    "name": "Marcus Rivera",
+    "role": "courier",
+    "home_neighborhood": "Astoria",
+    "home_borough": "Queens",
+    "subway_lines": [
+      "N",
+      "W"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "09:00",
+    "zone_assignment": "Midtown",
+    "phone": "718-555-0203",
+    "email": "marcus@shiftready.demo",
+    "notes": "N or W direct to 49th St \u2014 3 stops from warehouse"
+  },
+  {
+    "id": "e71a2b43-5279-4c4b-a48c-ec868d859636",
+    "created_at": "2026-04-08T22:23:26.780750+00:00",
+    "name": "Jamal Williams",
+    "role": "courier",
+    "home_neighborhood": "Bushwick",
+    "home_borough": "Brooklyn",
+    "subway_lines": [
+      "L",
+      "C"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "09:00",
+    "zone_assignment": "Chelsea",
+    "phone": "718-555-0201",
+    "email": "jamal@shiftready.demo",
+    "notes": "L to 8th Ave, C uptown to 50th"
+  },
+  {
+    "id": "5aa9fb20-aaab-49a2-b50e-11490584ffff",
+    "created_at": "2026-04-08T22:23:26.783354+00:00",
+    "name": "Priya Patel",
+    "role": "dispatcher",
+    "home_neighborhood": "Jackson Heights",
+    "home_borough": "Queens",
+    "subway_lines": [
+      "7",
+      "E"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "08:00",
+    "zone_assignment": "Uptown",
+    "phone": "718-555-0204",
+    "email": "priya@shiftready.demo",
+    "notes": "7 to Times Sq, transfer to E/C to 50th"
+  },
+  {
+    "id": "e656db1d-4d7c-4ed9-a01c-c8f1f8a28608",
+    "created_at": "2026-04-08T22:23:41.546913+00:00",
+    "name": "Fatima Al-Hassan",
+    "role": "manager",
+    "home_neighborhood": "Forest Hills",
+    "home_borough": "Queens",
+    "subway_lines": [
+      "E",
+      "F"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "08:00",
+    "zone_assignment": "Midtown",
+    "phone": "718-555-0210",
+    "email": "fatima@shiftready.demo",
+    "notes": "E or F to 47-50 Sts \u2014 express from Forest Hills"
+  },
+  {
+    "id": "db68490b-bd09-4bd1-8a28-e11585cbc6f4",
+    "created_at": "2026-04-08T22:23:41.549461+00:00",
+    "name": "Carmen Gonzalez",
+    "role": "driver",
+    "home_neighborhood": "Long Island City",
+    "home_borough": "Queens",
+    "subway_lines": [
+      "E",
+      "M"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "08:30",
+    "zone_assignment": "Midtown",
+    "phone": "718-555-0208",
+    "email": "carmen@shiftready.demo",
+    "notes": "E train direct to 50th St \u2014 fastest commute on the team"
+  },
+  {
+    "id": "8bd89d2c-b133-429a-9a6b-5bc2e0dffbcb",
+    "created_at": "2026-04-08T22:23:41.556500+00:00",
+    "name": "Kevin O'Brien",
+    "role": "courier",
+    "home_neighborhood": "Greenpoint",
+    "home_borough": "Brooklyn",
+    "subway_lines": [
+      "G",
+      "E"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "09:00",
+    "zone_assignment": "Chelsea",
+    "phone": "718-555-0209",
+    "email": "kevin@shiftready.demo",
+    "notes": "G to Court Sq, transfer to E uptown to 50th"
+  },
+  {
+    "id": "a87dda8c-6b6e-49c6-9880-91a100795d4a",
+    "created_at": "2026-04-08T22:23:41.557437+00:00",
+    "name": "Anna Kowalski",
+    "role": "courier",
+    "home_neighborhood": "Bay Ridge",
+    "home_borough": "Brooklyn",
+    "subway_lines": [
+      "R"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "09:30",
+    "zone_assignment": "East Village",
+    "phone": "718-555-0206",
+    "email": "anna@shiftready.demo",
+    "notes": "R train to 49th St \u2014 long ride but direct"
+  },
+  {
+    "id": "a2a2d0a2-9e39-44f5-adba-be1a802aa726",
+    "created_at": "2026-04-08T22:23:41.558811+00:00",
+    "name": "Tyrone Jackson",
+    "role": "courier",
+    "home_neighborhood": "Flatbush",
+    "home_borough": "Brooklyn",
+    "subway_lines": [
+      "2",
+      "5"
+    ],
+    "bus_lines": [],
+    "commute_mode": "subway",
+    "shift_start": "09:00",
+    "zone_assignment": "Uptown",
+    "phone": "718-555-0207",
+    "email": "tyrone@shiftready.demo",
+    "notes": "2 or 5 to Times Sq, 2/3 continues to 50th St"
+  }
+]
