@@ -1,185 +1,200 @@
-# ShiftReady: Agentic Daily Operations Briefing for Delivery Teams
+# ShiftReady
 
-## The Problem
+An agentic daily operations briefing tool for last-mile delivery teams. Every morning before a shift, an ops manager opens ShiftReady and gets a plain-English briefing: what's happening today that affects your operation, what's going to cause problems, and exactly what to do about it.
 
-Every morning, an ops manager walks into the warehouse and starts their shift blind. They check the weather on their phone, scroll Slack for overnight updates, glance at the schedule, and try to mentally piece together what kind of day it's going to be. By the time the first orders start flowing, they're already reacting instead of planning.
+The agent cross-references live NYC data sources and uses Claude to generate specific, actionable recommendations — not just a data dump.
 
-Meanwhile, the information they actually need is scattered across five different sources: weather forecasts, transit alerts, street closure notices, staffing schedules, and yesterday's performance. Nobody is connecting the dots between "the L train is down" and "three of your drivers take the L to work."
+---
 
-**ShiftReady connects those dots.** It pulls live data from public APIs, cross-references it against your operation, and generates an actionable briefing before the first order ships.
+## What it does
 
-## What Makes This Different
+**Today's Briefing** — Hit "Generate Briefing" and the agent pulls all live data, reasons across it, and writes a shift brief structured around your operation:
 
-This is not a dashboard. Dashboards show you data and let you figure out what it means. ShiftReady tells you what the data means for your operation and what to do about it.
+- **Critical Alerts** — anything requiring immediate action before dispatch
+- **Weather Impact** — not just the forecast, but what it means (rain → 25-40% longer delivery times, wind → reassign bike couriers to drivers, snow → driver-only operations)
+- **Transit Status** — affected subway lines mapped to your delivery zones and staffing impact (L train suspended → East Village staff from Williamsburg may be 40 min late)
+- **Route Disruptions** — street closures and construction cross-referenced against zones
+- **Staffing Impact** — which specific employees are at risk of being late based on their commute, with one-tap contact links
+- **Recommendations** — numbered action items for the next 30 minutes
 
-**A weather app says:** "Rain, 60°F, 80% chance of precipitation starting at noon."
+**Live Conditions** — Real-time weather, subway line status, and active 311 complaints. Auto-refreshes every 5 minutes.
 
-**ShiftReady says:** "Rain starting at noon will slow afternoon deliveries by 25-40%. Your 12:00-1:00 and 1:00-2:00 windows are at highest risk. Consider reducing order capacity for afternoon windows or pulling a driver from the morning shift to cover. Orders with temperature-sensitive items (dairy, chocolate) should be flagged for insulated packaging."
+**Briefing History** — Every briefing saved locally. View any past day.
 
-The difference is interpretation. The agent doesn't just fetch data — it thinks about what the data means for your specific operation and recommends specific actions.
+**Staff** — Manage your team's commute data. The lateness risk engine instantly cross-references each employee's subway lines against live transit alerts — no extra AI call needed.
 
-## How It Works
+---
 
-ShiftReady pulls from live, free public APIs — no dummy data, no simulations. Every briefing reflects what's actually happening right now.
+## Live data sources
 
-### Live Data Sources
+All free, no API keys required (except Anthropic).
 
-| Source | What It Provides | API |
-|--------|-----------------|-----|
-| National Weather Service | Hourly forecast, severe weather alerts, temperature, precipitation, wind | api.weather.gov (free, no key) |
-| OpenMeteo | Backup weather data, hourly breakdowns | open-meteo.com (free, no key) |
-| NYC MTA | Subway and bus service disruptions, delays, planned work | MTA alerts feed (free) |
-| NYC Open Data | Street closures, construction permits, road work | data.cityofnewyork.us (free) |
-| NYC 311 | Recent complaints — blocked roads, traffic signals, street conditions | data.cityofnewyork.us (free) |
+| Source | What it provides |
+|--------|-----------------|
+| [National Weather Service](https://www.weather.gov/documentation/services-web-api) | Current conditions, forecast, alerts for NYC |
+| [Open-Meteo](https://open-meteo.com) | Weather fallback (used automatically if NWS is down) |
+| [MTA GTFS-RT Alerts](https://api-endpoint.mta.info) | Live subway service alerts for all lines |
+| [NYC Open Data — Street Closures](https://data.cityofnewyork.us/resource/i5rr-er5q.json) | Active construction and closure permits |
+| [NYC 311](https://data.cityofnewyork.us/resource/erm2-nwe9.json) | Recent Manhattan street/traffic complaints |
 
-### Agent Intelligence
+All external API responses are cached for 15 minutes. Every source fails gracefully — if MTA is down, the briefing notes it and continues with available data.
 
-The agent cross-references data sources to surface compound impacts that no single source would reveal:
+---
 
-**Weather → Delivery Impact**
-- Rain/snow → longer delivery times, recommend capacity reduction
-- Extreme heat → flag temperature-sensitive orders for insulated packaging
-- High wind → reassign bike deliveries to drivers
-- Snow/ice → recommend driver-only operations
+## Tech stack
 
-**Transit Disruptions → Staffing Impact**
-- Maps each subway line to the employees who commute on it
-- If the L train is suspended → "3 staff members commute via L train. Expect 20-40 min delays. Consider delaying first dispatch wave."
-- Planned weekend work → flags staffing risks for weekend shifts in advance
+- **Backend** — Python / FastAPI
+- **Frontend** — React 18 + Vite
+- **AI** — Anthropic Claude (`claude-sonnet-4-20250514`)
+- **Storage** — JSON files (briefing history, employee roster)
 
-**Staff Predictions**
-- Cross-references employee commute routes with real-time transit status
-- Flags specific employees likely to be late based on disruptions on their line
-- Identifies potential call-out risk when severe weather or major transit outages make commuting difficult
-- Recommends backup staffing actions: "Marcus and Priya both take the A train (suspended). Devon takes the F (running with delays). You may be short 2 staff for the 10am start. Alert backups now."
+---
 
-**Street Closures → Route Impact**
-- Filters active closures and construction to your delivery zones
-- "Broadway closed between 23rd-28th for construction. 12 orders in today's Chelsea queue affected. Recommend alternate routing via 6th Ave."
+## Delivery zones
 
-**Combined Intelligence**
-- Rain + transit delay = "Compound impact: slower deliveries AND fewer drivers arriving on time. Recommend reducing 10am-11am window capacity by 30%."
-- Heat + high volume = "95°F today with 15 orders containing dairy. Pre-stage insulated bags at packing stations."
-- Street closure + driver call-out = "Downtown zone has a closure on Wall St AND you're short a driver. Reroute remaining downtown orders through East Village."
+The agent maps all data to five Manhattan zones:
 
-## Features
+| Zone | Coverage | Key subway lines |
+|------|----------|-----------------|
+| Uptown | Above 59th St | 1/2/3, 4/5/6, A/C |
+| Midtown | 34th–59th St | N/Q/R/W, 4/5/6, A/C/E, B/D/F/M, 7 |
+| Chelsea | 14th–34th St | 1/2/3, A/C/E, L |
+| East Village | Below 14th St, East of Broadway | L, 4/5/6, J/Z |
+| Downtown / FiDi | Below 14th St, West of Broadway | 1/2/3, A/C/E, J/Z, R/W |
 
-### Today's Briefing
-The main view. Hit "Generate Briefing" and the agent pulls all live data, analyzes it, and produces a structured briefing:
-- **Critical Alerts** — anything requiring immediate action (severe weather, major transit outage, staffing emergency)
-- **Weather Impact** — what today's weather means for your operation, not just the forecast
-- **Staff Status** — who might be late or unable to make it, based on their commute and current transit conditions
-- **Transit Status** — affected subway lines mapped to your delivery zones
-- **Route Disruptions** — street closures and construction with zone-level impact
-- **Recommendations** — numbered action items the ops manager should take before the shift starts
-
-### Staff Insights
-- Shows each employee, their commute method (subway line, bus route, driving, biking)
-- Real-time status of their commute route
-- Risk level: green (clear commute), yellow (delays on their line), red (service suspended)
-- Predicted arrival impact and recommended actions
-- Historical patterns: "Marcus has been late 3 of the last 5 times the A train had delays"
-
-### Live Conditions
-- Real-time weather with hourly forecast for the next 8 hours
-- Current transit status by subway line (green/yellow/red)
-- Active street closures filtered to your delivery zones
-- Auto-refreshes every 5 minutes
-
-### Briefing History
-- Past briefings stored by date
-- Compare conditions across days to spot patterns
-- "It rained 4 of the last 7 days — afternoon delivery times have averaged 35% longer"
-
-### Demo Mode
-- Toggle between "Live" (real data) and "Demo" (pre-built scenario) for presentations
-- Demo scenario: rainy day, L train suspended, Broadway construction, heat advisory, 2 staff affected by transit
-
-## Tech Stack
-
-- **Backend**: FastAPI (Python) with Anthropic Claude API for agent intelligence
-- **Frontend**: React with Vite
-- **Data Sources**: National Weather Service, OpenMeteo, NYC MTA, NYC Open Data, NYC 311 — all free, no paid APIs
-- **Storage**: JSON files for briefing history and staff profiles
+---
 
 ## Setup
 
 ### Prerequisites
+
 - Python 3.9+
 - Node.js 18+
-- An Anthropic API key ([get one here](https://console.anthropic.com))
+- An [Anthropic API key](https://console.anthropic.com)
 
-### Installation
+### Install and run
 
 ```bash
 git clone https://github.com/jtmcc17-boop/shiftready.git
 cd shiftready
 
+cp .env.example .env
+# Edit .env and add your ANTHROPIC_API_KEY
+
+./start.sh
+```
+
+`start.sh` handles everything: creates the Python venv, installs dependencies for both backend and frontend, and starts both servers.
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8000 |
+| API docs (Swagger) | http://localhost:8000/docs |
+
+Backend logs: `/tmp/shiftready-backend.log`
+
+### Manual setup (if you prefer)
+
+```bash
 # Backend
-cd backend
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env  # Add your ANTHROPIC_API_KEY
+pip install -r backend/requirements.txt
+cd backend && uvicorn main:app --port 8000 --reload
 
-# Frontend
-cd ../frontend
-npm install
+# Frontend (separate terminal)
+cd frontend && npm install && npm run dev
 ```
 
-### Run
+---
 
-```bash
-# From project root
-bash start.sh
+## Environment variables
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Or manually:
+That's the only required variable. All other data sources are public and keyless.
 
-```bash
-# Terminal 1: Backend
-cd backend && source venv/bin/activate && uvicorn main:app --reload
+---
 
-# Terminal 2: Frontend
-cd frontend && npm run dev
+## Employee management
+
+Add your team's commute info so ShiftReady can predict who might be late.
+
+**Add individually** — use the Staff tab's "Add Employee" form. Select subway lines from a visual NYC-color-coded picker.
+
+**Bulk upload** — upload a CSV from the Staff tab. Download the template from the upload dialog.
+
+CSV format:
+```
+name,role,home_neighborhood,home_borough,subway_lines,bus_lines,commute_mode,shift_start,zone_assignment,phone,email,notes
+Jane Smith,courier,Williamsburg,Brooklyn,L,B38,subway,09:00,East Village,555-0100,jane@example.com,
 ```
 
-## What Makes This a Real Product (Not a Demo)
+`subway_lines` and `bus_lines` are comma-separated within the cell. Set `overwrite=true` in the upload dialog to replace all existing employees.
 
-Every other project in an AI PM portfolio uses dummy data. ShiftReady uses live data from public APIs. You can open it right now and verify every recommendation against reality:
+**Risk levels:**
+- **High** — employee's subway line is suspended (~40 min estimated delay)
+- **Moderate** — line has delays or planned work, or bike/walk commuter in bad weather
+- **Low** — no known impact
 
-- Is it actually raining? Check weather.gov.
-- Is the L train actually down? Check the MTA app.
-- Is Broadway actually closed at 25th? Check NYC Open Data.
+High-risk employees surface in both the Staff tab and the Staffing Impact section of Today's Briefing, with phone/email contact links.
 
-The agent's value is testable in real-time. That's the difference between a prototype and a product.
+---
 
-## Changelog
+## Demo mode
 
-### v1 — Initial Build (April 2026)
-- Live weather integration (NWS + OpenMeteo)
-- NYC MTA transit status monitoring
-- NYC Open Data street closure and 311 integration
-- Staff commute tracking with transit-based arrival predictions
-- Agentic briefing generation with cross-referenced recommendations
-- Live and Demo mode toggle
-- Briefing history
+Toggle "Demo" in the header to switch from live data to a hardcoded scenario: heavy rain, 30 mph winds, L train suspended, Broadway construction in Chelsea. Useful for presentations or testing without waiting for real disruptions.
 
-## What's Next
+---
 
-- [ ] Integrate with DispatchIQ to automatically adjust delivery capacity based on briefing
-- [ ] SMS/push alerts to staff when their commute route is disrupted
-- [ ] Historical analytics: "when it rains, your afternoon OTIF drops by X%"
-- [ ] Customizable delivery zones (currently hardcoded to Manhattan)
-- [ ] Support for multiple cities beyond NYC
-- [ ] Shift-to-shift handoff notes carried forward into next day's briefing
+## API reference
 
-## Background
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/briefing/generate?demo=false` | Generate a new briefing via Claude |
+| `GET` | `/briefing/history` | List all saved briefings |
+| `GET` | `/briefing/{id}` | Retrieve a specific briefing |
+| `GET` | `/conditions?demo=false` | Raw conditions data (no Claude) |
+| `GET` | `/employees` | List all employees |
+| `POST` | `/employees` | Add a single employee |
+| `PUT` | `/employees/{id}` | Update an employee |
+| `DELETE` | `/employees/{id}` | Delete an employee |
+| `POST` | `/employees/upload` | Bulk upload from CSV or JSON |
+| `GET` | `/employees/risk?demo=false` | Lateness risk assessment |
+| `GET` | `/employees/template` | Download CSV template |
+| `GET` | `/health` | Health check |
 
-Built as part of a portfolio demonstrating agentic AI for frontline operations. Unlike portfolio projects that rely on synthetic data, ShiftReady connects to live public APIs to prove the agent's recommendations are accurate and useful in the real world. The staff insights feature reflects a real operational pain point: when the subway breaks, your shift is short-staffed, and nobody knows until people don't show up.
+Full interactive docs at `http://localhost:8000/docs`.
 
-Part of a connected worker portfolio that includes [CareLog](https://github.com/jtmcc17-boop/carelog) (healthcare frontline) and [DispatchIQ](https://github.com/jtmcc17-boop/dispatchiq) (delivery operations).
+---
 
-## License
+## Project structure
 
-MIT
+```
+shiftready/
+├── backend/
+│   ├── main.py           # FastAPI app and all routes
+│   ├── agent.py          # Claude integration and briefing generation
+│   ├── data_sources.py   # Live API fetching with 15-min cache
+│   ├── employees.py      # Employee CRUD and lateness risk engine
+│   ├── cache.py          # In-memory TTL cache decorator
+│   ├── requirements.txt
+│   └── briefings/        # Saved briefing JSON files (gitignored)
+├── frontend/
+│   └── src/
+│       ├── App.jsx                      # Root component, state, tab routing
+│       ├── components/
+│       │   ├── TodaysBriefing.jsx       # Main briefing view
+│       │   ├── LiveConditions.jsx       # Real-time conditions tab
+│       │   ├── BriefingHistory.jsx      # Past briefings tab
+│       │   ├── StaffTab.jsx             # Employee management tab
+│       │   └── AlertCard.jsx            # Reusable alert card
+│       ├── index.css                    # Design system and all styles
+│       └── main.jsx
+├── .env.example
+├── .gitignore
+└── start.sh
+```

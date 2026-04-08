@@ -1,4 +1,42 @@
+import { useState, useEffect } from 'react'
 import AlertCard from './AlertCard.jsx'
+
+const GENERATE_STAGES = [
+  { at: 0,  label: 'Fetching live weather from NWS…' },
+  { at: 4,  label: 'Pulling MTA subway alerts…' },
+  { at: 8,  label: 'Checking NYC street closures & 311…' },
+  { at: 13, label: 'Claude is analyzing conditions…' },
+  { at: 20, label: 'Writing your shift briefing…' },
+  { at: 27, label: 'Almost done…' },
+]
+
+function GeneratingOverlay() {
+  const [elapsed, setElapsed] = useState(0)
+
+  useEffect(() => {
+    const t = setInterval(() => setElapsed(s => s + 1), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  const stage = [...GENERATE_STAGES].reverse().find(s => elapsed >= s.at) || GENERATE_STAGES[0]
+  const pct = Math.min((elapsed / 32) * 100, 95)
+
+  return (
+    <div className="generating-overlay">
+      <div className="generating-card">
+        <div className="generating-spinner-wrap">
+          <div className="generating-spinner" />
+        </div>
+        <div className="generating-title">Generating Briefing</div>
+        <div className="generating-stage">{stage.label}</div>
+        <div className="generating-bar-track">
+          <div className="generating-bar-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="generating-time">~{Math.max(0, 32 - elapsed)}s remaining</div>
+      </div>
+    </div>
+  )
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -181,6 +219,9 @@ function StaffingImpact({ risk, onViewStaff }) {
 }
 
 export default function TodaysBriefing({ briefing, onGenerate, loading, error, demoMode, staffRisk, onViewStaff }) {
+  // ── Generating overlay (shown over empty state and over existing briefing) ──
+  if (loading) return <GeneratingOverlay />
+
   // ── Empty state ──────────────────────────────────────────────────────────
   if (!briefing) {
     return (
@@ -188,23 +229,18 @@ export default function TodaysBriefing({ briefing, onGenerate, loading, error, d
         <div className="empty-state-icon">📋</div>
         <div className="empty-state-title">No briefing yet</div>
         <div className="empty-state-desc">
-          Generate your morning briefing to see today's operational outlook, including weather impacts,
-          transit disruptions, and route recommendations.
+          Generate your morning briefing to see today's operational outlook — weather impacts,
+          transit disruptions, route closures, and staffing predictions.
+          <br /><br />
+          <strong>Takes about 30 seconds</strong> while the agent fetches live data and writes your briefing.
         </div>
         {error && <div className="error-banner" style={{ maxWidth: 480, marginBottom: 16 }}>{error}</div>}
-        <button
-          className="btn-generate"
-          style={{ maxWidth: 320 }}
-          onClick={onGenerate}
-          disabled={loading}
-        >
-          {loading
-            ? <><span className="loading-spinner loading-spinner-sm" /> Generating…</>
-            : `Generate ${demoMode ? 'Demo ' : ''}Briefing`}
+        <button className="btn-generate" style={{ maxWidth: 360 }} onClick={onGenerate}>
+          {demoMode ? '🎭 Generate Demo Briefing' : '⚡ Generate Today\'s Briefing'}
         </button>
         {demoMode && (
           <div style={{ marginTop: 12, fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-            Demo mode — uses hardcoded sample data
+            Demo mode — uses hardcoded scenario (rain, L suspended, Broadway closure)
           </div>
         )}
       </div>
@@ -246,8 +282,8 @@ export default function TodaysBriefing({ briefing, onGenerate, loading, error, d
         <StatusBadge status={overall_status} />
         <span className="briefing-date">{shift_date}</span>
         <span className="briefing-time">Generated at {formatTime(generated_at)}</span>
-        <button className="btn" onClick={onGenerate} disabled={loading} style={{ marginLeft: 'auto' }}>
-          {loading ? <><span className="loading-spinner loading-spinner-sm" /> Generating…</> : '↻ Regenerate'}
+        <button className="btn" onClick={onGenerate} style={{ marginLeft: 'auto' }}>
+          ↻ Regenerate
         </button>
       </div>
 
