@@ -1,5 +1,7 @@
 # ShiftReady
 
+**[Live Demo](https://frontend-ten-amber-97.vercel.app)**
+
 An agentic daily operations briefing tool for last-mile delivery teams. Every morning before a shift, an ops manager opens ShiftReady and gets a plain-English briefing: what's happening today that affects your operation, what's going to cause problems, and exactly what to do about it.
 
 The agent cross-references live NYC data sources and uses Claude to generate specific, actionable recommendations — not just a data dump.
