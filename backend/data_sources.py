@@ -1,11 +1,10 @@
 """
 data_sources.py — fetch live public data for ShiftReady ops briefings.
 
-All network calls are cached for 15 minutes and fail gracefully.
+Weather is cached up to 30 minutes; other sources up to 15 minutes. All fail gracefully.
 """
 
 import asyncio
-import sys
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict
 
@@ -67,17 +66,16 @@ def _now_iso() -> str:
 
 # ── Weather ───────────────────────────────────────────────────────────────────
 
-@cached(ttl=900)
+@cached(ttl=1800)
 async def get_weather() -> dict:
     """Try NWS first, fall back to Open-Meteo."""
     try:
         return await _weather_nws()
-    except Exception as exc:
-        print(f"[weather] NWS failed ({exc}), falling back to Open-Meteo", file=sys.stderr)
+    except Exception:
+        pass
     try:
         return await _weather_openmeteo()
-    except Exception as exc:
-        print(f"[weather] Open-Meteo also failed: {exc}", file=sys.stderr)
+    except Exception:
         return _empty_weather("unavailable")
 
 
@@ -203,10 +201,6 @@ async def _weather_openmeteo() -> dict:
         r = await client.get(url, headers=_OPEN_METEO_HEADERS)
         # 429/503 are common on shared hosting; degrade without treating as an exception storm.
         if r.status_code in (429, 503, 502):
-            print(
-                f"[weather] Open-Meteo unavailable (HTTP {r.status_code}); using empty weather",
-                file=sys.stderr,
-            )
             return _empty_weather("unavailable")
         r.raise_for_status()
         data = r.json()
@@ -290,8 +284,7 @@ FOCUS_LINES = {"1","2","3","4","5","6","7","A","C","E","B","D","F","M","L","N","
 async def get_mta_alerts() -> dict:
     try:
         return await _fetch_mta_alerts()
-    except Exception as exc:
-        print(f"[mta] fetch failed: {exc}", file=sys.stderr)
+    except Exception:
         return {
             "lines": {},
             "summary": "Transit data temporarily unavailable",
@@ -367,8 +360,7 @@ async def _fetch_mta_alerts() -> dict:
 async def get_street_closures() -> dict:
     try:
         return await _fetch_street_closures()
-    except Exception as exc:
-        print(f"[closures] fetch failed: {exc}", file=sys.stderr)
+    except Exception:
         return {"closures": [], "count": 0, "error": True, "fetched_at": _now_iso()}
 
 
@@ -411,8 +403,7 @@ async def _fetch_street_closures() -> dict:
 async def get_311_complaints() -> dict:
     try:
         return await _fetch_311_complaints()
-    except Exception as exc:
-        print(f"[311] fetch failed: {exc}", file=sys.stderr)
+    except Exception:
         return {"complaints": [], "count": 0, "error": True, "fetched_at": _now_iso()}
 
 

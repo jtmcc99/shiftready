@@ -4,7 +4,6 @@ agent.py — Use Claude to generate a structured ops briefing from conditions da
 
 import json
 import os
-import sys
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -163,8 +162,11 @@ def generate_briefing_with_claude(conditions: dict, demo: bool = False) -> dict:
     Send conditions data to Claude and get back a structured ops briefing.
     Returns a dict matching the briefing schema.
     """
-    client = _get_client()
     now_iso = datetime.now(timezone.utc).isoformat()
+    try:
+        client = _get_client()
+    except RuntimeError as exc:
+        return _error_briefing(str(exc), demo, now_iso)
 
     schema_note = (
         "The briefing MUST conform to this exact JSON structure:\n"
@@ -181,7 +183,6 @@ def generate_briefing_with_claude(conditions: dict, demo: bool = False) -> dict:
             ],
         )
     except Exception as exc:
-        print(f"[agent] Claude API call failed: {exc}", file=sys.stderr)
         return _error_briefing(str(exc), demo, now_iso)
 
     raw_text = response.content[0].text.strip()
@@ -194,8 +195,6 @@ def generate_briefing_with_claude(conditions: dict, demo: bool = False) -> dict:
     try:
         briefing = json.loads(raw_text)
     except json.JSONDecodeError as exc:
-        print(f"[agent] JSON parse error: {exc}", file=sys.stderr)
-        print(f"[agent] Raw response (first 500 chars): {raw_text[:500]}", file=sys.stderr)
         return _error_briefing(f"JSON parse error: {exc}", demo, now_iso)
 
     briefing["demo"] = demo
@@ -224,7 +223,7 @@ def _error_briefing(error_msg: str, demo: bool, now_iso: str) -> dict:
                 "title": "Briefing Generation Failed",
                 "description": f"Claude could not generate a briefing: {error_msg}",
                 "impact": "No automated analysis available — review conditions data manually.",
-                "action": "Check backend logs at /tmp/shiftready-backend.log and retry.",
+                "action": "Verify ANTHROPIC_API_KEY is configured on the server and retry.",
             }
         ],
         "weather_impact": {

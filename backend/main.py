@@ -22,6 +22,7 @@ from agent import generate_briefing_with_claude
 from employees import (
     get_all_employees, get_employee, create_employee, update_employee,
     delete_employee, bulk_upsert_employees, assess_lateness_risk,
+    ingest_historical_lateness, get_historical_model_profile, historical_upload_headers,
 )
 
 # ── App setup ─────────────────────────────────────────────────────────────────
@@ -79,6 +80,20 @@ def _briefing_summary(briefing: dict, briefing_id: str) -> dict:
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@app.get("/")
+async def root():
+    """Helpful landing for reviewers opening the API base URL in a browser."""
+    out = {
+        "service": "ShiftReady API",
+        "health": "/health",
+        "docs": "/docs",
+    }
+    fe = os.getenv("FRONTEND_URL")
+    if fe:
+        out["frontend_url"] = fe
+    return out
+
 
 @app.get("/health")
 async def health():
@@ -182,6 +197,33 @@ async def download_csv_template():
     )
 
 
+@app.get("/employees/history/template")
+async def download_history_csv_template():
+    """Return a CSV template for historical lateness + indicator uploads."""
+    headers = historical_upload_headers()
+    example = [
+        "", "Jane Smith", "2026-04-14", "09:00", "09:18", "18", "true",
+        "delays", "12", "L", "normal", "0", "", "21", "Heavy Rain", "92", "28", "54",
+    ]
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(headers)
+    writer.writerow(example)
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=shiftready_historical_lateness_template.csv"},
+    )
+
+
+@app.get("/employees/history/profile")
+async def get_history_profile():
+    """Return the latest trained historical profile (if available)."""
+    profile = get_historical_model_profile()
+    return {"profile": profile}
+
+
 @app.get("/employees/{emp_id}")
 async def get_employee_endpoint(emp_id: str):
     emp = get_employee(emp_id)
@@ -245,3 +287,39 @@ async def upload_employees(
 
     created = bulk_upsert_employees(data_list, overwrite=overwrite)
     return {"uploaded": len(created), "employees": created}
+
+
+@app.post("/employees/history/upload")
+async def upload_historical_data(
+    file: UploadFile = File(...),
+    overwrite: bool = Query(False),
+):
+    """
+    Bulk-upload historical attendance + signal rows from CSV or JSON.
+    The backend learns aggregate signal weights used by /employees/risk.
+    """
+    content = await file.read()
+    filename = file.filename or ""
+
+    try:
+        if filename.lower().endswith(".json"):
+            data_list = json.loads(content)
+            if not isinstance(data_list, list):
+                raise HTTPException(400, "JSON file must contain an array of history objects")
+        else:
+            text = content.decode("utf-8-sig")
+            reader = csv.DictReader(io.StringIO(text))
+            data_list = [dict(row) for row in reader]
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise HTTPException(400, f"Could not parse file: {exc}")
+
+    result = ingest_historical_lateness(data_list, overwrite=overwrite)
+    if result.get("uploaded", 0) == 0 and result.get("skipped", 0) > 0:
+        raise HTTPException(
+            400,
+            {
+                "message": "No valid rows were uploaded. Check the schema and retry.",
+                "rejected_rows": result.get("rejected_rows", []),
+            },
+        )
+    return result
