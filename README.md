@@ -26,6 +26,7 @@ The agent cross-references live NYC data sources and uses Claude to generate spe
 **Briefing History** — Every briefing saved locally. View any past day.
 
 **Staff** — Manage your team's commute data. The lateness risk engine instantly cross-references each employee's subway lines against live transit alerts — no extra AI call needed.
+Now supports historical model training: upload prior shift outcomes + external indicators to make lateness prediction smarter over time.
 
 ---
 
@@ -144,6 +145,13 @@ Jane Smith,courier,Williamsburg,Brooklyn,L,B38,subway,09:00,East Village,555-010
 - **Moderate** — line has delays or planned work, or bike/walk commuter in bad weather
 - **Low** — no known impact
 
+**Historical training (new):**
+- Upload historical shift records from Staff tab via **Upload Historical Data**
+- Include fields for scheduled start, actual clock-in, train/bus delay status, 311 count, and weather
+- Uploads are schema-validated (date/time formats, enum statuses, numeric ranges) and invalid rows are rejected with feedback
+- ShiftReady learns baseline lateness rates and signal strength (train disruption, weather stress, high 311 activity), plus route- and shift-window patterns
+- Model profile includes basic offline train/test metrics (precision, recall, F1) for prototype quality visibility
+
 High-risk employees surface in both the Staff tab and the Staffing Impact section of Today's Briefing, with phone/email contact links.
 
 ---
@@ -167,6 +175,9 @@ Toggle "Demo" in the header to switch from live data to a hardcoded scenario: he
 | `PUT` | `/employees/{id}` | Update an employee |
 | `DELETE` | `/employees/{id}` | Delete an employee |
 | `POST` | `/employees/upload` | Bulk upload from CSV or JSON |
+| `POST` | `/employees/history/upload` | Upload historical lateness + indicator rows and train model profile |
+| `GET` | `/employees/history/profile` | Get latest trained historical profile |
+| `GET` | `/employees/history/template` | Download historical upload CSV template |
 | `GET` | `/employees/risk?demo=false` | Lateness risk assessment |
 | `GET` | `/employees/template` | Download CSV template |
 | `GET` | `/health` | Health check |

@@ -7,3 +7,4 @@ backend/briefings/*.json
 *.egg-info/
 dist/
 .DS_Store
+frontend/.vercel/
