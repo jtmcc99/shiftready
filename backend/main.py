@@ -100,6 +100,18 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/version")
+async def deploy_version():
+    """
+    Which Git revision is running (Render sets RENDER_GIT_COMMIT).
+    Use this to confirm Dashboard deploys match GitHub `main`.
+    """
+    return {
+        "git_commit": os.getenv("RENDER_GIT_COMMIT", "unknown"),
+        "service": os.getenv("RENDER_SERVICE_NAME", "unknown"),
+    }
+
+
 @app.post("/briefing/generate")
 async def generate_briefing(demo: bool = Query(False)):
     """
