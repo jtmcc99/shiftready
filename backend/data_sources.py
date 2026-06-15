@@ -364,18 +364,38 @@ async def get_street_closures() -> dict:
         return {"closures": [], "count": 0, "error": True, "fetched_at": _now_iso()}
 
 
+# NYC Open Data dataset for active DOT street closures (block-level).
+# The previous dataset (i5rr-er5q) was retired; this is the current live resource.
+# https://data.cityofnewyork.us/Transportation/Street-Closures-due-to-Construction-Activities-by-/i6b5-j7bu
+_STREET_CLOSURES_ENDPOINT = "https://data.cityofnewyork.us/resource/i6b5-j7bu.json"
+
+# Single-letter borough codes used by the DOT dataset.
+_BOROUGH_CODE_NAMES = {
+    "M": "Manhattan",
+    "B": "Brooklyn",
+    "Q": "Queens",
+    "X": "Bronx",
+    "S": "Staten Island",
+}
+
+
 async def _fetch_street_closures() -> dict:
     today = datetime.now().strftime("%Y-%m-%d")
+    # ShiftReady's delivery zones are all in Manhattan, so we filter borough-side
+    # to keep the 50-row limit relevant to the briefing.
     where_clause = (
-        f"startdate <= '{today}T23:59:59.000' AND enddate >= '{today}T00:00:00.000'"
+        f"work_start_date <= '{today}T23:59:59' "
+        f"AND work_end_date >= '{today}T00:00:00' "
+        f"AND borough_code='M'"
     )
     params = {
         "$limit": "50",
         "$where": where_clause,
+        "$order": "work_start_date DESC",
     }
     async with httpx.AsyncClient(timeout=15) as client:
         r = await client.get(
-            "https://data.cityofnewyork.us/resource/i5rr-er5q.json",
+            _STREET_CLOSURES_ENDPOINT,
             params=params,
             headers=_HEADERS,
         )
@@ -385,13 +405,13 @@ async def _fetch_street_closures() -> dict:
     closures = []
     for row in data:
         closures.append({
-            "on_street": row.get("onstreetname", ""),
-            "from_street": row.get("fromstreetname", ""),
-            "to_street": row.get("tostreetname", ""),
-            "purpose": row.get("purpose", ""),
-            "borough": row.get("communityboard", ""),
-            "start_date": row.get("startdate", ""),
-            "end_date": row.get("enddate", ""),
+            "on_street": (row.get("onstreetname") or "").strip(),
+            "from_street": (row.get("fromstreetname") or "").strip(),
+            "to_street": (row.get("tostreetname") or "").strip(),
+            "purpose": (row.get("purpose") or "").strip(),
+            "borough": _BOROUGH_CODE_NAMES.get(row.get("borough_code", ""), row.get("borough_code", "")),
+            "start_date": row.get("work_start_date", ""),
+            "end_date": row.get("work_end_date", ""),
         })
 
     return {"closures": closures, "count": len(closures), "fetched_at": _now_iso()}
