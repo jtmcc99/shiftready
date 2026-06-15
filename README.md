@@ -1,12 +1,16 @@
 # ShiftReady
 
-**Live demo:** [shiftready.vercel.app](https://shiftready.vercel.app) · **Backend:** [shiftready-uk1v.onrender.com](https://shiftready-uk1v.onrender.com) ([API docs](https://shiftready-uk1v.onrender.com/docs))
-
-> The Render free tier sleeps after inactivity, so the first request may take 30–60 seconds to wake the backend. Toggle **Demo** in the header for a deterministic scenario (heavy rain, L train suspended) if live MTA or NWS data is quiet.
-
 An agentic daily operations briefing tool for last-mile delivery teams. Every morning before a shift, an ops manager opens ShiftReady and gets a plain-English briefing: what's happening today that affects your operation, what's going to cause problems, and exactly what to do about it.
 
 The agent cross-references live NYC data sources and uses Claude to generate specific, actionable recommendations — not just a data dump.
+
+## Live Demo
+
+Try it now: **[shiftready.vercel.app](https://shiftready.vercel.app)**
+
+Backend: [shiftready-uk1v.onrender.com](https://shiftready-uk1v.onrender.com) ([API docs](https://shiftready-uk1v.onrender.com/docs))
+
+> The Render free tier sleeps after inactivity, so the first request may take 30–60 seconds to wake the backend. Toggle **Demo** in the header for a deterministic scenario (heavy rain, L train suspended) if live MTA or NWS data is quiet.
 
 | Today's Briefing | Live Conditions |
 |:---:|:---:|
