@@ -424,22 +424,39 @@ async def get_311_complaints() -> dict:
     try:
         return await _fetch_311_complaints()
     except Exception:
-        return {"complaints": [], "count": 0, "error": True, "fetched_at": _now_iso()}
+        return {
+            "complaints": [],
+            "count": 0,
+            "most_recent_complaint_at": None,
+            "error": True,
+            "fetched_at": _now_iso(),
+        }
+
+
+# Street/traffic-relevant complaint types only — we deliberately exclude noise/odor/
+# housing categories that don't affect last-mile delivery ops.
+_RELEVANT_311_COMPLAINT_TYPES = (
+    "Blocked Driveway",
+    "Traffic Signal Condition",
+    "Street Condition",
+    "Pothole",
+    "Highway Condition",
+    "Street Light Condition",
+)
 
 
 async def _fetch_311_complaints() -> dict:
-    since = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%S")
-    complaint_types = (
-        "'Blocked Driveway','Traffic Signal Condition','Street Condition',"
-        "'Pothole','Highway Condition','Street Light Condition'"
-    )
+    # 72-hour citywide window: wider than the previous 24h/Manhattan-only filter so
+    # the briefing sees relevant complaints from across NYC.
+    since = (datetime.now(timezone.utc) - timedelta(hours=72)).strftime("%Y-%m-%dT%H:%M:%S")
+    complaint_types_sql = ",".join(f"'{t}'" for t in _RELEVANT_311_COMPLAINT_TYPES)
     where_clause = (
-        f"created_date > '{since}' AND borough = 'MANHATTAN' "
-        f"AND complaint_type in({complaint_types})"
+        f"created_date > '{since}' AND complaint_type in({complaint_types_sql})"
     )
     params = {
         "$limit": "100",
         "$where": where_clause,
+        "$order": "created_date DESC",
     }
     async with httpx.AsyncClient(timeout=15) as client:
         r = await client.get(
@@ -456,11 +473,21 @@ async def _fetch_311_complaints() -> dict:
             "complaint_type": row.get("complaint_type", ""),
             "descriptor": row.get("descriptor", ""),
             "incident_address": row.get("incident_address", ""),
+            "borough": row.get("borough", ""),
             "created_date": row.get("created_date", ""),
             "status": row.get("status", ""),
         })
 
-    return {"complaints": complaints, "count": len(complaints), "fetched_at": _now_iso()}
+    # Staleness indicator: the timestamp of the freshest complaint in the returned set.
+    # Results are ordered DESC by created_date, so the first row is the newest.
+    most_recent = complaints[0]["created_date"] if complaints else None
+
+    return {
+        "complaints": complaints,
+        "count": len(complaints),
+        "most_recent_complaint_at": most_recent,
+        "fetched_at": _now_iso(),
+    }
 
 
 # ── Aggregate ─────────────────────────────────────────────────────────────────
@@ -614,18 +641,20 @@ def get_demo_conditions() -> dict:
         "fetched_at": now,
     }
 
+    demo_complaints = [
+        {"complaint_type": "Blocked Driveway", "descriptor": "No Access", "incident_address": "88 FULTON ST", "borough": "MANHATTAN", "created_date": today + "08:05:00", "status": "Open"},
+        {"complaint_type": "Highway Condition", "descriptor": "Debris on Road", "incident_address": "FDR DRIVE @ E 34TH ST", "borough": "MANHATTAN", "created_date": today + "08:45:00", "status": "Open"},
+        {"complaint_type": "Pothole", "descriptor": "Pothole", "incident_address": "120 VARICK ST", "borough": "MANHATTAN", "created_date": today + "08:30:00", "status": "Open"},
+        {"complaint_type": "Street Light Condition", "descriptor": "Street Light Out", "incident_address": "300 E 14TH ST", "borough": "MANHATTAN", "created_date": today + "08:20:00", "status": "Open"},
+        {"complaint_type": "Traffic Signal Condition", "descriptor": "Signal Out", "incident_address": "6TH AVE & W 23RD ST", "borough": "MANHATTAN", "created_date": today + "07:55:00", "status": "Open"},
+        {"complaint_type": "Street Condition", "descriptor": "Flooding", "incident_address": "200 W 14TH ST", "borough": "MANHATTAN", "created_date": today + "07:30:00", "status": "Open"},
+        {"complaint_type": "Pothole", "descriptor": "Pothole", "incident_address": "450 BROADWAY", "borough": "MANHATTAN", "created_date": today + "07:10:00", "status": "Open"},
+        {"complaint_type": "Blocked Driveway", "descriptor": "No Access", "incident_address": "123 W 25TH ST", "borough": "MANHATTAN", "created_date": today + "06:45:00", "status": "Open"},
+    ]
     complaints_311 = {
-        "complaints": [
-            {"complaint_type": "Blocked Driveway", "descriptor": "No Access", "incident_address": "123 W 25TH ST", "created_date": today + "06:45:00", "status": "Open"},
-            {"complaint_type": "Pothole", "descriptor": "Pothole", "incident_address": "450 BROADWAY", "created_date": today + "07:10:00", "status": "Open"},
-            {"complaint_type": "Street Condition", "descriptor": "Flooding", "incident_address": "200 W 14TH ST", "created_date": today + "07:30:00", "status": "Open"},
-            {"complaint_type": "Traffic Signal Condition", "descriptor": "Signal Out", "incident_address": "6TH AVE & W 23RD ST", "created_date": today + "07:55:00", "status": "Open"},
-            {"complaint_type": "Blocked Driveway", "descriptor": "No Access", "incident_address": "88 FULTON ST", "created_date": today + "08:05:00", "status": "Open"},
-            {"complaint_type": "Street Light Condition", "descriptor": "Street Light Out", "incident_address": "300 E 14TH ST", "created_date": today + "08:20:00", "status": "Open"},
-            {"complaint_type": "Pothole", "descriptor": "Pothole", "incident_address": "120 VARICK ST", "created_date": today + "08:30:00", "status": "Open"},
-            {"complaint_type": "Highway Condition", "descriptor": "Debris on Road", "incident_address": "FDR DRIVE @ E 34TH ST", "created_date": today + "08:45:00", "status": "Open"},
-        ],
-        "count": 8,
+        "complaints": demo_complaints,
+        "count": len(demo_complaints),
+        "most_recent_complaint_at": demo_complaints[0]["created_date"],
         "fetched_at": now,
     }
 
