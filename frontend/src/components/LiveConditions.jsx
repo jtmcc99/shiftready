@@ -27,6 +27,27 @@ function minutesAgo(isoString) {
   }
 }
 
+// Verbose relative-time formatter used for the 311 data-freshness indicator.
+// The backend returns Socrata timestamps as bare ISO (no offset) but documents
+// them as UTC, so we append 'Z' when missing to parse consistently across timezones.
+function relativeTimeAgo(isoString) {
+  if (!isoString) return null
+  try {
+    const parseable = /[zZ]|[+-]\d{2}:?\d{2}$/.test(isoString) ? isoString : `${isoString}Z`
+    const ms = Date.now() - new Date(parseable).getTime()
+    if (Number.isNaN(ms)) return null
+    if (ms < 60_000) return 'just now'
+    const min = Math.round(ms / 60_000)
+    if (min < 60) return `${min} minute${min === 1 ? '' : 's'} ago`
+    const hr = Math.round(min / 60)
+    if (hr < 24) return `${hr} hour${hr === 1 ? '' : 's'} ago`
+    const day = Math.round(hr / 24)
+    return `${day} day${day === 1 ? '' : 's'} ago`
+  } catch {
+    return null
+  }
+}
+
 function LineBadge({ line }) {
   return (
     <span className={`line-badge line-${line}`} title={`${line} Train`}>
@@ -282,12 +303,17 @@ export default function LiveConditions({ conditions, onRefresh, loading, demoMod
       {/* ── 311 Activity ── */}
       <div className="section">
         <div className="section-title">
-          311 Activity — Manhattan (Last 24h)
+          311 Activity — NYC (Last 72h)
           {complaints?.count != null && (
             <span style={{ marginLeft: 8, fontWeight: 400, fontSize: '0.75rem', color: 'var(--text-light)', textTransform: 'none', letterSpacing: 0 }}>
               {complaints.count} complaints
             </span>
           )}
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: -6, marginBottom: 10 }}>
+          {complaints?.most_recent_complaint_at
+            ? `311 data: most recent complaint ${relativeTimeAgo(complaints.most_recent_complaint_at) ?? 'recently'}`
+            : '311 data unavailable'}
         </div>
         {complaints?.error ? (
           <div className="card" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
@@ -295,7 +321,7 @@ export default function LiveConditions({ conditions, onRefresh, loading, demoMod
           </div>
         ) : sortedComplaints.length === 0 ? (
           <div className="card" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-            No relevant complaints in the last 24 hours
+            No relevant complaints in the last 72 hours
           </div>
         ) : (
           <div className="card">
